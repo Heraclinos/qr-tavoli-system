@@ -1,9 +1,0 @@
-{
-  "name": "qr-tavoli-frontend",
-  "scripts": {
-    "build": "parcel build src/index.html --dist-dir dist --public-url ./"
-  },
-  "devDependencies": {
-    "parcel": "^2.8.0"
-  }
-}
