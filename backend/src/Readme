@@ -1,0 +1,203 @@
+# 🍽️ QR Tavoli Backend - Sistema Punti Ristorante
+
+Backend API per sistema di punti fedeltà basato su QR code per ristoranti.
+
+## 📋 Caratteristiche
+
+- **Sistema QR Code**: Ogni tavolo ha un QR code univoco per identificazione
+- **Gestione Punti**: Cassieri possono assegnare punti, clienti vedono classifica
+- **Ruoli Utente**: Admin, Cassiere, Cliente con permessi diversi
+- **Autenticazione JWT**: Sistema di login sicuro
+- **Database MongoDB**: Persistenza dati con Mongoose
+- **Validazione Input**: Controlli di sicurezza su tutti gli endpoint
+- **API RESTful**: Endpoint ben strutturati e documentati
+
+## 🚀 Quick Start
+
+### Prerequisiti
+- Node.js >= 18.0.0
+- MongoDB (locale o MongoDB Atlas)
+- npm o yarn
+
+### Installazione
+
+1. **Clona il repository**
+   ```bash
+   git clone <repo-url>
+   cd qr-tavoli-backend
+   ```
+
+2. **Installa dipendenze**
+   ```bash
+   npm install
+   ```
+
+3. **Configura environment**
+   ```bash
+   cp .env.example .env
+   # Modifica .env con le tue configurazioni
+   ```
+
+4. **Popola database con dati di esempio**
+   ```bash
+   npm run seed
+   ```
+
+5. **Avvia server**
+   ```bash
+   # Development
+   npm run dev
+
+   # Production
+   npm start
+   ```
+
+Il server sarà disponibile su `http://localhost:3000`
+
+## 🏗️ Struttura Progetto
+
+```
+src/
+├── config/          # Configurazioni database e app
+├── controllers/     # Logica business
+├── middleware/      # Auth, validazione, controlli ruoli
+├── models/          # Schema Mongoose
+├── routes/          # Definizione endpoint
+└── utils/           # Utility e helper functions
+```
+
+## 🔐 Autenticazione
+
+L'API usa JWT tokens per l'autenticazione. Include il token nell'header:
+
+```
+Authorization: Bearer <your-jwt-token>
+```
+
+### Utenti di default (dopo seed)
+- **Admin**: `admin@restaurant.com` / `admin123`
+- **Cassiere**: `cassiere@restaurant.com` / `cassiere123`
+
+## 📡 Endpoint Principali
+
+### Autenticazione
+```
+POST /api/auth/register  # Registrazione
+POST /api/auth/login     # Login
+GET  /api/auth/me        # Profilo utente
+```
+
+### Tavoli
+```
+GET  /api/tables/leaderboard    # Classifica pubblica
+GET  /api/tables/qr/:qrCode     # Trova tavolo tramite QR
+POST /api/tables                # Crea tavolo (Admin)
+PUT  /api/tables/:id/name       # Cambia nome tavolo
+```
+
+### Punti
+```
+POST /api/points/add            # Assegna punti (Cassiere)
+POST /api/points/redeem         # Riscatta punti (Cassiere)
+GET  /api/points/transactions   # Storico transazioni
+GET  /api/points/stats/daily    # Statistiche giornaliere
+```
+
+## 🎯 Flusso Applicazione
+
+1. **Cassiere** fa login e scansiona QR code del tavolo cliente
+2. **Sistema** identifica il tavolo e mostra punti attuali
+3. **Cassiere** assegna punti in base all'acquisto
+4. **Cliente** può vedere classifica e cambiare nome tavolo
+5. **Sistema** traccia tutte le transazioni per analytics
+
+## 🔧 Configurazione
+
+### Variabili Environment (.env)
+```bash
+NODE_ENV=development
+PORT=3000
+MONGODB_URI=mongodb://localhost:27017/qr-tavoli
+JWT_SECRET=your-super-secret-key
+JWT_EXPIRE=24h
+FRONTEND_URL=http://localhost:3000
+```
+
+### Ruoli Utente
+- **Admin**: Gestione completa sistema
+- **Cashier**: Assegnazione/riscatto punti
+- **Customer**: Visualizzazione classifica, cambio nome tavolo
+
+## 🧪 Testing
+
+```bash
+# Esegui test
+npm test
+
+# Test con coverage
+npm run test:coverage
+```
+
+## 🏃‍♂️ Deployment
+
+### Opzioni Hosting Consigliate
+1. **Render** (gratuito) - Include database
+2. **Railway** - $5 crediti/mese
+3. **Heroku** - Piani a pagamento
+4. **DigitalOcean** - VPS personalizzato
+
+### Build per produzione
+```bash
+# Imposta NODE_ENV=production nel .env
+npm start
+```
+
+## 🛡️ Sicurezza
+
+- Rate limiting (100 req/15min per IP)
+- Helmet per headers sicuri
+- Validazione input con express-validator
+- Hash password con bcrypt
+- Sanitizzazione HTML
+- Controlli ruoli granulari
+
+## 📊 Monitoring e Logging
+
+- Morgan per logging HTTP requests
+- Error handling centralizzato
+- Health check endpoint: `GET /health`
+
+## 🤝 Contributing
+
+1. Fork del progetto
+2. Crea branch feature (`git checkout -b feature/amazing-feature`)
+3. Commit changes (`git commit -m 'Add amazing feature'`)
+4. Push branch (`git push origin feature/amazing-feature`)
+5. Apri Pull Request
+
+## 📝 API Documentation
+
+Avvia il server e visita `/api/docs` per documentazione interattiva (da implementare con Swagger).
+
+## ⚡ Performance Tips
+
+- Usa indici MongoDB per query frequenti
+- Implementa caching Redis per classifiche
+- Ottimizza query con populate selettivo
+- Monitora performance con APM tools
+
+## 🐛 Troubleshooting
+
+### Errori Comuni
+- **MongoDB Connection**: Verifica MONGODB_URI in .env
+- **JWT Token**: Controlla JWT_SECRET e formato token
+- **CORS**: Imposta FRONTEND_URL correttamente
+- **Validazione**: Controlla formato dati in input
+
+## 📞 Support
+
+Per bug reports e feature requests, apri un issue su GitHub.
+
+---
+
+Sviluppato con ❤️ per ristoranti italiani 🇮🇹

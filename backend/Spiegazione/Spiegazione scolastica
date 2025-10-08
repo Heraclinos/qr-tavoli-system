@@ -1,0 +1,284 @@
+# 🎓 Guida Completa al Backend Node.js - Livello UniversitarioImmagina il backend come un **ristorante ben organizzato** dove ogni persona ha un ruolo specifico e tutto funziona in sequenza ordinata. Ti spiego ogni concetto partendo dalle basi.
+
+## 🏗️ **Architettura Generale del Sistema**### **Cos'è un Backend?**Il backend è la parte "invisibile" di un'applicazione web che gira sul server. Mentre il frontend (il nostro QR scanner) è ciò che gli utenti vedono, il backend gestisce:
+- **Dati**: Dove e come vengono salvati
+- **Logica**: Le regole business dell'applicazione  
+- **Sicurezza**: Chi può fare cosa
+- **Comunicazione**: Come i dati viaggiano tra app e database
+
+## 🔄 **Il Viaggio di una Richiesta API**Quando un cassiere scansiona un QR e aggiunge punti, ecco cosa succede tecnicamente:
+
+### **Step 1: Il Client Invia la Richiesta**```javascript
+// Il frontend invia questo alla API
+fetch('/api/points/add', {
+  method: 'POST',
+  headers: {
+    'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({
+    qrCode: 'TABLE_5',
+    points: 10,
+    description: 'Consumazione pranzo'
+  })
+})
+```
+
+### **Step 2: Express.js Riceve la Richiesta****Express.js** è come il "receptionist" del ristorante. Riceve tutte le richieste e decide dove instradarle. È un **framework web** per Node.js che semplifica la gestione di:
+- Route (percorsi URL)
+- Middleware (controlli intermedi)
+- Request/Response (richieste e risposte)
+
+### **Step 3: Middleware Stack**I **middleware** sono come i "controlli di sicurezza" all'ingresso di un locale. Ogni richiesta passa attraverso una serie di controlli:
+
+```javascript
+// 1. CORS - Controlla da dove arriva la richiesta
+app.use(cors({
+  origin: 'https://mio-ristorante.com'
+}))
+
+// 2. Auth - Verifica se l'utente è autenticato
+app.use('/api', authMiddleware)
+
+// 3. Validation - Controlla che i dati siano corretti
+app.use(validationMiddleware)
+
+// 4. Role Check - Verifica i permessi
+app.use(roleCheckMiddleware)
+```
+
+### **Step 4: Routing**Il **router** è come il maitre che dirige i clienti al tavolo giusto. Guarda l'URL e decide quale **controller** deve gestire la richiesta:
+
+```javascript
+// routes/points.js
+router.post('/add', 
+  protect,              // Middleware auth
+  requireCashier,       // Middleware ruoli
+  validateAddPoints,    // Middleware validazione
+  addPoints            // Controller finale
+)
+```
+
+### **Step 5: Controller (Cervello dell'Operazione)**Il **controller** è il "chef" che esegue la ricetta. Contiene la **logica business**:
+
+```javascript
+// controllers/pointsController.js
+exports.addPoints = async (req, res) => {
+  try {
+    // 1. Estrae dati dalla richiesta
+    const { qrCode, points } = req.body
+    
+    // 2. Trova il tavolo tramite QR
+    const table = await Table.findByQR(qrCode)
+    
+    // 3. Aggiunge i punti
+    await table.addPoints(points, req.user.id)
+    
+    // 4. Crea record transazione
+    const transaction = await PointTransaction.create({...})
+    
+    // 5. Restituisce risposta
+    res.json({ success: true, data: table })
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message })
+  }
+}
+```
+
+## 🗄️ **Database e Modelli**### **Cos'è MongoDB?****MongoDB** è un database **NoSQL** (Not Only SQL). A differenza dei database tradizionali con tabelle, MongoDB usa **documenti** (simili a oggetti JavaScript):
+
+```javascript
+// Documento User in MongoDB
+{
+  _id: ObjectId("..."),
+  username: "cassiere1",
+  email: "cassiere@restaurant.com",
+  password: "$2a$12$hash...",  // Password crittografata
+  role: "cashier",
+  firstName: "Mario",
+  lastName: "Rossi"
+}
+```
+
+### **Cos'è Mongoose?****Mongoose** è un **ODM** (Object Document Mapper) che fa da ponte tra JavaScript e MongoDB. Definisce la **struttura** e le **regole** dei dati:
+
+```javascript
+// Schema Mongoose per User
+const UserSchema = new mongoose.Schema({
+  username: {
+    type: String,
+    required: true,
+    unique: true,
+    minlength: 3
+  },
+  email: {
+    type: String,
+    required: true,
+    match: /^[^\s@]+@[^\s@]+\.[^\s@]+$/  // Regex per email valida
+  }
+})
+
+// Metodi personalizzati
+UserSchema.methods.matchPassword = async function(password) {
+  return await bcrypt.compare(password, this.password)
+}
+```
+
+### **Relazioni tra Modelli** Nel nostro sistema abbiamo tre entità principali che si collegano:
+
+1. **User** (Utenti): Cassieri, clienti, admin
+2. **Table** (Tavoli): I tavoli del ristorante con punti
+3. **PointTransaction** (Transazioni): Storico delle operazioni sui punti
+
+Le **relazioni** funzionano così:
+- Un **User** può creare molte **PointTransaction** (1:N)
+- Una **Table** può avere molte **PointTransaction** (1:N)
+- Ogni **PointTransaction** appartiene a un **User** e una **Table**
+
+## 🔐 **Sistema di Autenticazione JWT**### **Cos'è JWT (JSON Web Token)?**JWT è come un "pass VIP" digitale che contiene informazioni cifrate sull'utente. È composto da 3 parti separate da punti:
+
+```
+header.payload.signature
+eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjEyMyIsInJvbGUiOiJjYXNoaWVyIn0.signature
+```
+
+**Header**: Dice come è codificato il token
+**Payload**: Contiene i dati dell'utente (ID, ruolo, etc.)
+**Signature**: Firma per verificare che non sia stato manomesso
+
+### **Flusso di Autenticazione**1. **Login**: Utente invia email/password
+2. **Verifica**: Server controlla le credenziali nel database
+3. **Token**: Se valide, genera un JWT con i dati utente
+4. **Storage**: Client salva il token (localStorage/cookie)
+5. **Richieste**: Client include token nell'header di ogni richiesta
+6. **Verifica**: Server decodifica il token e recupera l'utente
+
+```javascript
+// Generazione token nel controller
+const token = jwt.sign(
+  { id: user._id, role: user.role },  // Payload
+  process.env.JWT_SECRET,             // Chiave segreta
+  { expiresIn: '24h' }               // Scadenza
+)
+
+// Verifica token nel middleware
+const decoded = jwt.verify(token, process.env.JWT_SECRET)
+const user = await User.findById(decoded.id)
+req.user = user  // Aggiunge utente alla richiesta
+```
+
+## 🛡️ **Middleware: I Guardiani del Sistema**I **middleware** sono funzioni che si eseguono **prima** del controller finale. Sono come checkpoint di sicurezza:
+
+### **1. Authentication Middleware**```javascript
+exports.protect = async (req, res, next) => {
+  // 1. Estrae token dall'header
+  const token = req.headers.authorization?.split(' ')[1]
+  
+  // 2. Verifica se esiste
+  if (!token) return res.status(401).json({message: 'Token mancante'})
+  
+  // 3. Decodifica e verifica
+  const decoded = jwt.verify(token, JWT_SECRET)
+  
+  // 4. Trova utente nel database
+  const user = await User.findById(decoded.id)
+  
+  // 5. Aggiunge utente alla richiesta
+  req.user = user
+  
+  // 6. Passa al middleware successivo
+  next()
+}
+```
+
+### **2. Role Check Middleware**```javascript
+exports.requireCashier = (req, res, next) => {
+  if (req.user.role !== 'cashier' && req.user.role !== 'admin') {
+    return res.status(403).json({message: 'Accesso negato'})
+  }
+  next()
+}
+```
+
+### **3. Validation Middleware**```javascript
+exports.validateAddPoints = [
+  body('points')
+    .isInt({min: 1, max: 100})
+    .withMessage('Punti devono essere tra 1 e 100'),
+  body('qrCode')
+    .matches(/^TABLE_\d+$/)
+    .withMessage('QR code non valido')
+]
+```
+
+## 🔄 **Pattern MVC (Model-View-Controller)**Il nostro backend segue il pattern **MVC**:
+
+- **Model**: Gestisce i dati (User.js, Table.js, PointTransaction.js)
+- **View**: Nel nostro caso sono le **API responses** (JSON)
+- **Controller**: Gestisce la logica (authController.js, pointsController.js)
+
+### **Vantaggi del Pattern MVC**:1. **Separazione delle responsabilità**: Ogni file ha un compito specifico
+2. **Manutenibilità**: Facile modificare una parte senza rompere le altre
+3. **Testabilità**: Ogni componente può essere testato separatamente
+4. **Scalabilità**: Facile aggiungere nuove funzionalità
+
+## 🔗 **Come Tutto si Connette**### **Esempio Pratico: Aggiungere Punti**1. **Frontend** invia richiesta `POST /api/points/add`
+2. **Express** riceve la richiesta
+3. **CORS Middleware** verifica origine richiesta
+4. **Auth Middleware** decodifica JWT e trova utente
+5. **Role Middleware** verifica che utente sia cassiere
+6. **Validation Middleware** controlla formato dati
+7. **Router** indirizza a `pointsController.addPoints`
+8. **Controller** esegue logica business:
+   - Trova tavolo tramite `Table.findByQR()`
+   - Aggiorna punti con `table.addPoints()`
+   - Crea transazione con `PointTransaction.create()`
+9. **Mongoose** salva dati in **MongoDB**
+10. **Controller** restituisce risposta JSON
+11. **Frontend** riceve conferma e aggiorna UI
+
+### **Gestione Errori**Ogni livello può intercettare errori:
+```javascript
+// Nel controller
+try {
+  const table = await Table.findByQR(qrCode)
+  if (!table) {
+    return res.status(404).json({message: 'Tavolo non trovato'})
+  }
+} catch (error) {
+  console.error('Errore:', error)
+  res.status(500).json({message: 'Errore interno server'})
+}
+```
+
+## 🧪 **Testing: Come Verificare che Tutto Funzioni**I **test automatici** sono come "prove generali" prima dello spettacolo:
+
+```javascript
+// Test di esempio
+describe('POST /api/points/add', () => {
+  test('Should add points successfully', async () => {
+    // 1. Crea dati di test
+    const pointsData = { qrCode: 'TABLE_1', points: 10 }
+    
+    // 2. Simula richiesta API
+    const response = await request(app)
+      .post('/api/points/add')
+      .set('Authorization', `Bearer ${token}`)
+      .send(pointsData)
+      .expect(200)
+    
+    // 3. Verifica risultato
+    expect(response.body.success).toBe(true)
+    expect(response.body.data.points).toBe(10)
+  })
+})
+```
+
+## 🚀 **Vantaggi di Questa Architettura**1. **Modulare**: Ogni file ha una responsabilità specifica
+2. **Scalabile**: Facile aggiungere nuove funzionalità
+3. **Sicura**: Multipli livelli di controllo
+4. **Testabile**: Ogni componente può essere testato
+5. **Manutenibile**: Codice organizzato e documentato
+6. **Performance**: Middleware cacheable e query ottimizzate
+
+Questa architettura segue le **best practice** dell'industria software e ti permetterà di costruire applicazioni robuste e professionali. Ogni pezzo del puzzle ha il suo ruolo e tutti lavorano insieme per creare un sistema affidabile e sicuro!

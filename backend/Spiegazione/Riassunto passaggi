@@ -1,0 +1,58 @@
+
+1. il client attraverso url richiede o manda 
+
+2. Express.js Riceve tutte le richieste e decide dove instradarle È un **framework web**
+	che gestisce: 
+	- Route (percorsi URL)
+	- Middleware (controlli intermedi, si eseguono **prima** del controller finale)
+	- Request/Response (richieste e risposte)
+
+3.Routing Guarda l'URL e decide quale **controller** deve gestire la richiesta
+
+4. Controller (Cervello dell'Operazione) Contiene la **logica business**:	
+    // 1. Estrae dati dalla richiesta   
+    // 2. Trova il tavolo tramite QR    
+    // 3. Aggiunge i punti   
+    // 4. Crea record transazione
+    // 5. Restituisce risposta
+
+5.MongoDB è un database **NoSQL** (Not Only SQL). A differenza dei database tradizionali con tabelle, MongoDB usa **documenti** (simili a oggetti JavaScript):
+
+6. Mongoose è un **ODM** (Object Document Mapper) che fa da ponte tra JavaScript e MongoDB. Definisce la **struttura** e le **regole** dei dati:
+
+7. Nel nostro sistema abbiamo tre entità principali che si collegano:
+
+	1. **User** (Utenti): Cassieri, clienti, admin
+	2. **Table** (Tavoli): I tavoli del ristorante con punti
+	3. **PointTransaction** (Transazioni): Storico delle operazioni sui punti
+
+8.Sistema di Autenticazione JWT (JSON Web Token)  È composto da 3 parti separate da punti:
+
+header.payload.signature
+eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjEyMyIsInJvbGUiOiJjYXNoaWVyIn0.signature
+**Header**: Dice come è codificato il token
+**Payload**: Contiene i dati dell'utente (ID, ruolo, etc.)
+**Signature**: Firma per verificare che non sia stato manomesso
+
+9. *Pattern MVC (Model-View-Controller)**:
+ 	- **Model**: Gestisce i dati (User.js, Table.js, PointTransaction.js)
+	- **View**: Nel nostro caso sono le **API responses** (JSON)
+	- **Controller**: Gestisce la logica (authController.js, pointsController.js)
+
+es.
+
+## 🔗 **Come Tutto si Connette**### **Esempio Pratico: Aggiungere Punti**1. **Frontend** invia richiesta `POST /api/points/add`
+2. **Express** riceve la richiesta
+3. **CORS Middleware** verifica origine richiesta
+4. **Auth Middleware** decodifica JWT e trova utente
+5. **Role Middleware** verifica che utente sia cassiere
+6. **Validation Middleware** controlla formato dati
+7. **Router** indirizza a `pointsController.addPoints`
+8. **Controller** esegue logica business:
+   - Trova tavolo tramite `Table.findByQR()`
+   - Aggiorna punti con `table.addPoints()`
+   - Crea transazione con `PointTransaction.create()`
+9. **Mongoose** salva dati in **MongoDB**
+10. **Controller** restituisce risposta JSON
+11. **Frontend** riceve conferma e aggiorna UI
+
