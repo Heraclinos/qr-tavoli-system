@@ -1,11 +1,20 @@
 
  // Entry point dell’app: avvia il server, gestisce errori globali, collega Express e DB
- 
+const express = require('express');
+const cors = require('cors');  // ← Importa cors
+require('dotenv').config();
 const app = require('./src/app');
 const connectDB = require('./src/config/database');
 require('dotenv').config();
 
 const PORT = process.env.PORT || 3000;
+app.use(cors({
+  origin: [
+    'http://localhost:3000',  // Development
+    'https://qr-tavoli-frontend.onrender.com'  // Se usi Render per frontend
+  ],
+  credentials: true
+}));
 
 // Connessione al database
 connectDB();
@@ -29,10 +38,4 @@ process.on('uncaughtException', (err) => {
 
 
 // Configura CORS per il frontend
-app.use(cors({
-  origin: [
-    'http://localhost:3000',  // Development
-    'https://qr-tavoli-frontend.onrender.com'  // Se usi Render per frontend
-  ],
-  credentials: true
-}));
+
