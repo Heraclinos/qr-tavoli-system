@@ -3,158 +3,140 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sistema QR Punti Tavoli</title>
+    <title>QR Tavoli - Sistema Punti</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
+    <!-- Loading Screen -->
+    <div id="loading" class="loading-screen">
+        <div class="loading-spinner"></div>
+        <p>Caricamento...</p>
+    </div>
+
     <!-- Header -->
-    <header class="header">
+    <header class="app-header">
         <div class="container">
-            <div class="flex items-center justify-between">
-                <div class="flex items-center gap-8">
-                    <h1 class="logo">🍽️ Sistema Punti</h1>
-                    <span id="userRole" class="user-role hidden"></span>
+            <div class="header-content">
+                <h1 class="app-title">🍽️ QR Tavoli</h1>
+                <div class="header-actions">
+                    <button id="loginBtn" class="btn btn--outline btn--sm login-btn">
+                        👤 Accedi
+                    </button>
+                    <button id="logoutBtn" class="btn btn--outline btn--sm logout-btn hidden">
+                        🚪 Esci
+                    </button>
                 </div>
-                <button id="changeRoleBtn" class="btn btn--outline btn--sm hidden">Cambia Ruolo</button>
             </div>
         </div>
     </header>
 
-    <!-- Main Container -->
-    <main class="main-container">
+    <!-- Main Content -->
+    <main class="main-content">
         <div class="container">
-            <!-- Login Screen -->
-            <div id="loginScreen" class="screen">
-                <div class="login-form">
-                    <div class="card">
-                        <div class="card__body">
-                            <h2 class="text-center mb-24">Seleziona il tuo ruolo</h2>
-                            <div class="role-selection">
-                                <button id="customerBtn" class="role-btn role-btn--customer">
-                                    <div class="role-icon">👥</div>
-                                    <h3>Cliente</h3>
-                                    <p>Visualizza classifica e scansiona il tuo tavolo</p>
-                                </button>
-                                <button id="cashierBtn" class="role-btn role-btn--cashier">
-                                    <div class="role-icon">👨‍💼</div>
-                                    <h3>Cassiere</h3>
-                                    <p>Scansiona tavoli e assegna punti</p>
-                                </button>
+            <!-- Normal Table View -->
+            <div id="tableView" class="table-view">
+                <div class="table-info-card card">
+                    <div class="card__body">
+                        <div class="table-header">
+                            <h2 id="currentTableName" class="table-name">Tavolo 1</h2>
+                            <div class="table-position">
+                                <span class="position-badge" id="tablePosition">#1</span>
+                                <span class="points-display" id="tablePoints">85 punti</span>
+                            </div>
+                        </div>
+                        
+                        <div class="table-actions">
+                            <div class="form-group">
+                                <label class="form-label">Cambia nome tavolo:</label>
+                                <div class="name-change-form">
+                                    <input type="text" id="newTableName" class="form-control" placeholder="Nuovo nome...">
+                                    <button id="changeNameBtn" class="btn btn--primary btn--sm">Salva</button>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
-            </div>
 
-            <!-- Customer Dashboard -->
-            <div id="customerScreen" class="screen hidden customer-theme">
-                <div class="dashboard-container">
-                    <h2 class="dashboard-title">🏆 Classifica Tavoli</h2>
-                    
-                    <!-- QR Scanner for Customer -->
-                    <div class="card">
-                        <div class="card__body">
-                            <h3>📱 Scansiona il Tuo Tavolo</h3>
-                            <div class="scanner-section">
-                                <div class="scanner-input">
-                                    <label class="form-label">Inserisci il codice del tuo tavolo:</label>
-                                    <input type="text" id="customerQrInput" class="form-control" placeholder="Es: TABLE_1">
-                                    <button id="customerScanBtn" class="btn btn--primary mt-8">Scansiona QR</button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- My Table Section -->
-                    <div id="myTableSection" class="card hidden">
-                        <div class="card__body">
-                            <h3>🎯 Il Tuo Tavolo</h3>
-                            <div class="my-table-info">
-                                <div class="table-details">
-                                    <div class="table-name-large" id="myTableName"></div>
-                                    <div class="table-points-large" id="myTablePoints"></div>
-                                </div>
-                                <div class="rename-section">
-                                    <label class="form-label">Cambia nome del tuo tavolo:</label>
-                                    <div class="rename-input-group">
-                                        <input type="text" id="newTableNameInput" class="form-control" placeholder="Nuovo nome">
-                                        <button id="saveNameBtn" class="btn btn--primary">Salva</button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Leaderboard -->
-                    <div class="card">
-                        <div class="card__body">
-                            <h3>🏆 Classifica Generale</h3>
-                            <div id="leaderboard" class="leaderboard">
-                                <!-- Leaderboard will be populated by JavaScript -->
-                            </div>
-                        </div>
+                <!-- Leaderboard -->
+                <div class="leaderboard-section">
+                    <h3>🏆 Classifica Tavoli</h3>
+                    <div class="leaderboard" id="leaderboard">
+                        <!-- Leaderboard items will be populated by JS -->
                     </div>
                 </div>
             </div>
 
             <!-- Cashier Dashboard -->
-            <div id="cashierScreen" class="screen hidden cashier-theme">
-                <div class="dashboard-container">
-                    <h2 class="dashboard-title">💼 Gestione Punti</h2>
-                    
-                    <!-- QR Scanner Section -->
+            <div id="cashierView" class="cashier-view hidden">
+                <div class="cashier-header">
+                    <div class="cashier-info">
+                        <h2>💼 Dashboard Cassiere</h2>
+                        <p>Benvenuto, <span id="cashierName">Cassiere</span></p>
+                    </div>
+                    <div class="current-table-info">
+                        <h3 id="cashierTableName">Tavolo 1</h3>
+                        <span id="cashierTablePoints" class="points-badge">85 punti</span>
+                    </div>
+                </div>
+
+                <div class="points-section">
                     <div class="card">
                         <div class="card__body">
-                            <h3>📱 Scansiona Tavolo</h3>
-                            <div class="scanner-section">
-                                <div class="scanner-input">
-                                    <label class="form-label">Codice tavolo da gestire:</label>
-                                    <input type="text" id="cashierQrInput" class="form-control" placeholder="Es: TABLE_1">
-                                    <button id="cashierScanBtn" class="btn btn--primary mt-8">Scansiona</button>
-                                </div>
-                                <div id="scannerResult" class="scanner-result hidden">
-                                    <div class="scanned-table">
-                                        <h4>📍 Tavolo Selezionato</h4>
-                                        <div class="table-info">
-                                            <span class="table-name" id="scannedTableName"></span>
-                                            <span class="table-points" id="scannedTablePoints"></span>
-                                        </div>
-                                    </div>
-                                </div>
+                            <h4>➕ Aggiungi Punti</h4>
+                            <div class="points-buttons">
+                                <button class="btn btn--primary point-btn" data-points="1">+1</button>
+                                <button class="btn btn--primary point-btn" data-points="5">+5</button>
+                                <button class="btn btn--primary point-btn" data-points="10">+10</button>
+                                <button class="btn btn--primary point-btn" data-points="20">+20</button>
+                            </div>
+                            <div class="custom-points">
+                                <input type="number" id="customPoints" class="form-control" placeholder="Punti personalizzati" min="1">
+                                <button id="addCustomPoints" class="btn btn--secondary">Aggiungi</button>
                             </div>
                         </div>
                     </div>
+                </div>
 
-                    <!-- Points Assignment Section -->
-                    <div id="pointsSection" class="card hidden">
-                        <div class="card__body">
-                            <h3>➕ Aggiungi Punti</h3>
-                            <div class="points-assignment">
-                                <div class="points-input-section">
-                                    <label class="form-label">Punti personalizzati:</label>
-                                    <input type="number" id="customPointsInput" class="form-control" min="1" max="100" placeholder="Inserisci punti">
-                                    <button id="addCustomPointsBtn" class="btn btn--secondary mt-8">Aggiungi Punti Personalizzati</button>
-                                </div>
-                                
-                                <div class="points-divider">
-                                    <span>oppure</span>
-                                </div>
-                                
-                                <div class="points-buttons">
-                                    <button class="btn btn--secondary points-btn" data-points="1">+1 Punto</button>
-                                    <button class="btn btn--secondary points-btn" data-points="5">+5 Punti</button>
-                                    <button class="btn btn--secondary points-btn" data-points="10">+10 Punti</button>
-                                    <button class="btn btn--secondary points-btn" data-points="20">+20 Punti</button>
-                                </div>
-                            </div>
-                        </div>
+                <div class="operations-history">
+                    <h4>📋 Operazioni Recenti</h4>
+                    <div id="operationsHistory" class="operations-list">
+                        <!-- Operations will be populated by JS -->
                     </div>
                 </div>
             </div>
         </div>
     </main>
 
-    <!-- Toast Messages -->
+    <!-- Login Modal -->
+    <div id="loginModal" class="modal hidden">
+        <div class="modal-backdrop"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>🔐 Accesso Cassiere</h3>
+                <button id="closeModal" class="modal-close">✕</button>
+            </div>
+            <div class="modal-body">
+                <form id="loginForm">
+                    <div class="form-group">
+                        <label class="form-label">Username:</label>
+                        <input type="text" id="username" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Password:</label>
+                        <input type="password" id="password" class="form-control" required>
+                    </div>
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn--primary btn--full-width">Accedi</button>
+                    </div>
+                </form>
+                <div class="login-help">
+                    <small>Credenziali demo: cassiere1 / cassiere123</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notifications -->
     <div id="toastContainer" class="toast-container"></div>
 
     <script src="app.js"></script>
