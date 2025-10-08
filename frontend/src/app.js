@@ -1,683 +1,591 @@
 // Configuration
-const API_CONFIG = {
-  BASE_URL: window.location.hostname === 'localhost' 
-    ? 'http://localhost:3000/api'
-    : 'https://qr-tavoli-backend.onrender.com/api',
-  TIMEOUT: 10000,
-  RETRY_ATTEMPTS: 3
+const CONFIG = {
+    apiBaseUrl: 'https://qr-tavoli-backend.onrender.com/api',
+    sessionKey: 'qr-tavoli-session',
+    sessionDuration: 24 * 60 * 60 * 1000, // 24 ore
+    fallbackMode: true // Enable fallback to mock data if API fails
 };
 
-// Mock data for fallback
+// Mock Data
 const MOCK_DATA = {
-  tables: [
-    {"id": 1, "name": "Tavolo 1", "points": 85, "qrCode": "TABLE_1"},
-    {"id": 2, "name": "Tavolo VIP", "points": 92, "qrCode": "TABLE_2"},
-    {"id": 3, "name": "Tavolo 3", "points": 34, "qrCode": "TABLE_3"},
-    {"id": 4, "name": "Tavolo Famiglia", "points": 67, "qrCode": "TABLE_4"},
-    {"id": 5, "name": "Tavolo 5", "points": 23, "qrCode": "TABLE_5"},
-    {"id": 6, "name": "Tavolo Terrazza", "points": 78, "qrCode": "TABLE_6"},
-    {"id": 7, "name": "Tavolo 7", "points": 45, "qrCode": "TABLE_7"},
-    {"id": 8, "name": "Tavolo Romantico", "points": 56, "qrCode": "TABLE_8"},
-    {"id": 9, "name": "Tavolo 9", "points": 89, "qrCode": "TABLE_9"},
-    {"id": 10, "name": "Tavolo Giardino", "points": 41, "qrCode": "TABLE_10"}
-  ],
-  users: [
-    {"username": "cassiere1", "password": "cassiere123", "role": "cashier", "name": "Mario Rossi"},
-    {"username": "admin", "password": "admin123", "role": "admin", "name": "Admin Sistema"}
-  ],
-  transactions: []
+    tables: [
+        {"id": 1, "name": "Tavolo 1", "points": 85, "qrCode": "TABLE_1"},
+        {"id": 2, "name": "Tavolo VIP", "points": 92, "qrCode": "TABLE_2"},
+        {"id": 3, "name": "Tavolo 3", "points": 34, "qrCode": "TABLE_3"},
+        {"id": 4, "name": "Tavolo Famiglia", "points": 67, "qrCode": "TABLE_4"},
+        {"id": 5, "name": "Tavolo 5", "points": 23, "qrCode": "TABLE_5"},
+        {"id": 6, "name": "Tavolo Terrazza", "points": 78, "qrCode": "TABLE_6"},
+        {"id": 7, "name": "Tavolo 7", "points": 45, "qrCode": "TABLE_7"},
+        {"id": 8, "name": "Tavolo Romantico", "points": 56, "qrCode": "TABLE_8"},
+        {"id": 9, "name": "Tavolo 9", "points": 89, "qrCode": "TABLE_9"},
+        {"id": 10, "name": "Tavolo Giardino", "points": 41, "qrCode": "TABLE_10"}
+    ],
+    users: [
+        {"username": "cassiere1", "password": "cassiere123", "role": "cashier", "name": "Mario Rossi"},
+        {"username": "admin", "password": "admin123", "role": "admin", "name": "Admin Sistema"},
+        {"username": "manager", "password": "manager123", "role": "cashier", "name": "Giulia Bianchi"}
+    ]
 };
 
-// Application State
-const AppState = {
-  currentUser: null,
-  selectedTable: null,
-  myTable: null,
-  transactions: [],
-  isOnline: navigator.onLine,
-  useMockData: false
+// Global State
+let currentTable = null;
+let currentSession = null;
+let operationsHistory = [];
+
+// DOM Elements
+const elements = {
+    loading: document.getElementById('loading'),
+    loginBtn: document.getElementById('loginBtn'),
+    logoutBtn: document.getElementById('logoutBtn'),
+    tableView: document.getElementById('tableView'),
+    cashierView: document.getElementById('cashierView'),
+    loginModal: document.getElementById('loginModal'),
+    closeModal: document.getElementById('closeModal'),
+    loginForm: document.getElementById('loginForm'),
+    
+    // Table view elements
+    currentTableName: document.getElementById('currentTableName'),
+    tablePosition: document.getElementById('tablePosition'),
+    tablePoints: document.getElementById('tablePoints'),
+    newTableName: document.getElementById('newTableName'),
+    changeNameBtn: document.getElementById('changeNameBtn'),
+    leaderboard: document.getElementById('leaderboard'),
+    
+    // Cashier view elements
+    cashierName: document.getElementById('cashierName'),
+    cashierTableName: document.getElementById('cashierTableName'),
+    cashierTablePoints: document.getElementById('cashierTablePoints'),
+    customPoints: document.getElementById('customPoints'),
+    addCustomPoints: document.getElementById('addCustomPoints'),
+    operationsHistory: document.getElementById('operationsHistory'),
+    
+    // Form elements
+    username: document.getElementById('username'),
+    password: document.getElementById('password'),
+    
+    // Toast container
+    toastContainer: document.getElementById('toastContainer')
 };
 
 // Utility Functions
-function generateId() {
-  return Math.random().toString(36).substring(2) + Date.now().toString(36);
+function showToast(message, type = 'info') {
+    const toast = document.createElement('div');
+    toast.className = `toast ${type}`;
+    toast.textContent = message;
+    
+    elements.toastContainer.appendChild(toast);
+    
+    setTimeout(() => {
+        toast.remove();
+    }, 4000);
 }
 
-function formatDate(date) {
-  return new Intl.DateTimeFormat('it-IT', {
-    hour: '2-digit',
-    minute: '2-digit',
-    day: '2-digit',
-    month: '2-digit'
-  }).format(date);
+function formatTime(timestamp) {
+    const date = new Date(timestamp);
+    return date.toLocaleTimeString('it-IT', { 
+        hour: '2-digit', 
+        minute: '2-digit' 
+    });
+}
+
+function hideLoading() {
+    elements.loading.style.display = 'none';
+}
+
+function showLoading() {
+    elements.loading.style.display = 'flex';
+}
+
+// Session Management
+function saveSession(sessionData) {
+    const session = {
+        ...sessionData,
+        loginTime: Date.now(),
+        expires: Date.now() + CONFIG.sessionDuration
+    };
+    localStorage.setItem(CONFIG.sessionKey, JSON.stringify(session));
+    currentSession = session;
+}
+
+function getSession() {
+    try {
+        const sessionData = localStorage.getItem(CONFIG.sessionKey);
+        if (!sessionData) return null;
+        
+        const session = JSON.parse(sessionData);
+        
+        // Check if session is expired
+        if (session.expires < Date.now()) {
+            localStorage.removeItem(CONFIG.sessionKey);
+            return null;
+        }
+        
+        return session;
+    } catch (error) {
+        localStorage.removeItem(CONFIG.sessionKey);
+        return null;
+    }
+}
+
+function clearSession() {
+    localStorage.removeItem(CONFIG.sessionKey);
+    currentSession = null;
 }
 
 // API Functions
 async function apiCall(endpoint, options = {}) {
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), API_CONFIG.TIMEOUT);
-
-  try {
-    const response = await fetch(`${API_CONFIG.BASE_URL}${endpoint}`, {
-      ...options,
-      signal: controller.signal,
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': AppState.currentUser?.token ? `Bearer ${AppState.currentUser.token}` : '',
-        ...options.headers
-      }
-    });
-
-    clearTimeout(timeoutId);
-
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-    }
-
-    return await response.json();
-  } catch (error) {
-    clearTimeout(timeoutId);
-    console.error('API Error:', error);
-    
-    // Fallback to mock data if API fails
-    if (!AppState.useMockData && !AppState.isOnline) {
-      AppState.useMockData = true;
-      showToast('Modalità offline attivata', 'warning');
-      updateOfflineIndicator();
-    }
-    
-    throw error;
-  }
-}
-
-async function retryApiCall(endpoint, options = {}, attempts = API_CONFIG.RETRY_ATTEMPTS) {
-  for (let i = 0; i < attempts; i++) {
     try {
-      return await apiCall(endpoint, options);
+        const url = `${CONFIG.apiBaseUrl}${endpoint}`;
+        
+        // Add auth header if session exists
+        if (currentSession?.token) {
+            options.headers = {
+                ...options.headers,
+                'Authorization': `Bearer ${currentSession.token}`
+            };
+        }
+
+        const response = await fetch(url, {
+            headers: {
+                'Content-Type': 'application/json',
+                ...options.headers
+            },
+            ...options
+        });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
+        
+        return await response.json();
     } catch (error) {
-      if (i === attempts - 1) throw error;
-      await new Promise(resolve => setTimeout(resolve, Math.pow(2, i) * 1000));
+        console.warn('API call failed, using fallback:', error);
+        
+        if (!CONFIG.fallbackMode) {
+            throw error;
+        }
+        
+        // Fallback to mock data
+        return handleMockApiCall(endpoint, options);
     }
-  }
 }
 
-// Mock API Functions
-function mockLogin(username, password) {
-  const user = MOCK_DATA.users.find(u => u.username === username && u.password === password);
-  if (user) {
-    return {
-      success: true,
-      user: { ...user, token: 'mock-token-' + generateId() }
-    };
-  }
-  return { success: false, message: 'Credenziali non valide' };
-}
-
-function mockGetTable(qrCode) {
-  const table = MOCK_DATA.tables.find(t => t.qrCode === qrCode);
-  return table || null;
-}
-
-function mockGetLeaderboard() {
-  return [...MOCK_DATA.tables].sort((a, b) => b.points - a.points);
-}
-
-function mockAddPoints(tableId, points) {
-  const table = MOCK_DATA.tables.find(t => t.id === tableId);
-  if (table) {
-    table.points += points;
-    const transaction = {
-      id: generateId(),
-      tableId,
-      tableName: table.name,
-      points,
-      timestamp: new Date(),
-      cashier: AppState.currentUser?.name || 'Mock Cashier'
-    };
-    MOCK_DATA.transactions.unshift(transaction);
-    AppState.transactions.unshift(transaction);
-    return { success: true, table, transaction };
-  }
-  return { success: false, message: 'Tavolo non trovato' };
-}
-
-function mockUpdateTableName(tableId, newName) {
-  const table = MOCK_DATA.tables.find(t => t.id === tableId);
-  if (table) {
-    table.name = newName;
-    return { success: true, table };
-  }
-  return { success: false, message: 'Tavolo non trovato' };
-}
-
-// Screen Management
-function showScreen(screenId) {
-  document.querySelectorAll('.screen').forEach(screen => {
-    screen.classList.remove('active');
-  });
-  document.getElementById(screenId).classList.add('active');
-}
-
-// Loading States
-function setButtonLoading(buttonId, loading = true) {
-  const button = document.getElementById(buttonId);
-  if (button) {
-    button.classList.toggle('loading', loading);
-    button.disabled = loading;
-  }
-}
-
-// Toast Notifications
-function showToast(message, type = 'info', title = '') {
-  const container = document.getElementById('toast-container');
-  const toast = document.createElement('div');
-  toast.className = `toast ${type}`;
-  
-  const icons = {
-    success: '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>',
-    error: '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>',
-    warning: '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/></svg>',
-    info: '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>'
-  };
-
-  toast.innerHTML = `
-    <div class="toast-content">
-      <div class="toast-icon">${icons[type] || icons.info}</div>
-      <div class="toast-message">
-        ${title ? `<div class="toast-title">${title}</div>` : ''}
-        <p class="toast-description">${message}</p>
-      </div>
-      <button class="toast-close" onclick="this.parentElement.parentElement.remove()">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
-        </svg>
-      </button>
-    </div>
-  `;
-
-  container.appendChild(toast);
-  
-  setTimeout(() => {
-    if (toast.parentNode) {
-      toast.remove();
+function handleMockApiCall(endpoint, options) {
+    // Mock login
+    if (endpoint === '/auth/login' && options.method === 'POST') {
+        const { username, password } = JSON.parse(options.body);
+        const user = MOCK_DATA.users.find(u => u.username === username && u.password === password);
+        
+        if (user) {
+            return {
+                success: true,
+                token: `mock-token-${Date.now()}`,
+                user: { 
+                    username: user.username, 
+                    role: user.role, 
+                    name: user.name 
+                }
+            };
+        } else {
+            throw new Error('Invalid credentials');
+        }
     }
-  }, 5000);
-}
-
-// Modal Functions
-function showConfirmModal(title, message, onConfirm) {
-  const modal = document.getElementById('confirm-modal');
-  const titleEl = document.getElementById('confirm-modal-title');
-  const messageEl = document.getElementById('confirm-modal-message');
-  const actionBtn = document.getElementById('confirm-modal-action');
-
-  titleEl.textContent = title;
-  messageEl.textContent = message;
-  
-  actionBtn.onclick = () => {
-    closeConfirmModal();
-    onConfirm();
-  };
-
-  modal.classList.remove('hidden');
-}
-
-function closeConfirmModal() {
-  document.getElementById('confirm-modal').classList.add('hidden');
-}
-
-// Offline Management
-function updateOfflineIndicator() {
-  const indicator = document.getElementById('offline-indicator');
-  indicator.classList.toggle('hidden', AppState.isOnline && !AppState.useMockData);
-}
-
-// Authentication
-async function login(username, password) {
-  setButtonLoading('login-btn', true);
-  
-  try {
-    let result;
     
-    if (AppState.useMockData || !AppState.isOnline) {
-      result = mockLogin(username, password);
-    } else {
-      try {
-        const response = await retryApiCall('/auth/login', {
-          method: 'POST',
-          body: JSON.stringify({ username, password })
-        });
-        result = { success: true, user: response.user };
-      } catch (error) {
-        // Fallback to mock
-        AppState.useMockData = true;
-        result = mockLogin(username, password);
-      }
+    // Mock get tables
+    if (endpoint === '/tables/leaderboard') {
+        return { 
+            success: true, 
+            tables: [...MOCK_DATA.tables].sort((a, b) => b.points - a.points)
+        };
     }
-
-    if (result.success) {
-      AppState.currentUser = result.user;
-      document.getElementById('cashier-name').textContent = `Benvenuto, ${result.user.name}`;
-      showScreen('cashier-dashboard');
-      showToast('Accesso effettuato con successo!', 'success');
-      loadRecentTransactions();
-    } else {
-      showToast(result.message || 'Errore durante l\'accesso', 'error');
-    }
-  } catch (error) {
-    showToast('Errore di connessione. Riprova più tardi.', 'error');
-  } finally {
-    setButtonLoading('login-btn', false);
-  }
-}
-
-function logout() {
-  showConfirmModal(
-    'Conferma Logout',
-    'Sei sicuro di voler uscire?',
-    () => {
-      AppState.currentUser = null;
-      AppState.selectedTable = null;
-      AppState.myTable = null;
-      showScreen('role-selection');
-      showToast('Logout effettuato', 'info');
-    }
-  );
-}
-
-// Table Management
-async function findTable(qrCode) {
-  setButtonLoading('scan-btn', true);
-  
-  try {
-    let table;
     
-    if (AppState.useMockData || !AppState.isOnline) {
-      table = mockGetTable(qrCode);
-    } else {
-      try {
-        const response = await retryApiCall(`/tables/qr/${qrCode}`);
-        table = response.table;
-      } catch (error) {
-        AppState.useMockData = true;
-        table = mockGetTable(qrCode);
-      }
+    // Mock get specific table
+    if (endpoint.startsWith('/tables/qr/')) {
+        const qrCode = endpoint.split('/').pop();
+        const table = MOCK_DATA.tables.find(t => t.qrCode === qrCode);
+        if (table) {
+            return { success: true, table };
+        } else {
+            throw new Error('Table not found');
+        }
     }
-
-    if (table) {
-      AppState.selectedTable = table;
-      displayTableDetails(table);
-      showToast(`Tavolo "${table.name}" trovato!`, 'success');
-    } else {
-      showToast('Codice QR non valido', 'error');
-      hideTableDetails();
-    }
-  } catch (error) {
-    showToast('Errore durante la ricerca del tavolo', 'error');
-    hideTableDetails();
-  } finally {
-    setButtonLoading('scan-btn', false);
-  }
-}
-
-function displayTableDetails(table) {
-  document.getElementById('selected-table-name').textContent = table.name;
-  document.getElementById('selected-table-points').textContent = table.points;
-  document.getElementById('table-details').classList.remove('hidden');
-  document.getElementById('points-assignment').classList.remove('hidden');
-}
-
-function hideTableDetails() {
-  document.getElementById('table-details').classList.add('hidden');
-  document.getElementById('points-assignment').classList.add('hidden');
-  AppState.selectedTable = null;
-}
-
-async function addPoints(tableId, points) {
-  setButtonLoading('assign-points-btn', true);
-  
-  try {
-    let result;
     
-    if (AppState.useMockData || !AppState.isOnline) {
-      result = mockAddPoints(tableId, points);
-    } else {
-      try {
-        const response = await retryApiCall('/points/add', {
-          method: 'POST',
-          body: JSON.stringify({ tableId, points })
-        });
-        result = { success: true, table: response.table, transaction: response.transaction };
-      } catch (error) {
-        AppState.useMockData = true;
-        result = mockAddPoints(tableId, points);
-      }
+    // Mock add points
+    if (endpoint === '/points/add' && options.method === 'POST') {
+        const { tableId, points } = JSON.parse(options.body);
+        const table = MOCK_DATA.tables.find(t => t.id === tableId);
+        if (table) {
+            table.points += points;
+            operationsHistory.unshift({
+                id: Date.now(),
+                tableId,
+                points,
+                timestamp: Date.now(),
+                cashier: currentSession?.user?.name || 'Cassiere'
+            });
+            return { success: true, newPoints: table.points };
+        }
     }
-
-    if (result.success) {
-      AppState.selectedTable = result.table;
-      displayTableDetails(result.table);
-      document.getElementById('custom-points').value = '';
-      document.querySelectorAll('.points-preset').forEach(btn => btn.classList.remove('active'));
-      showToast(`${points} punti aggiunti a "${result.table.name}"!`, 'success');
-      loadRecentTransactions();
-    } else {
-      showToast(result.message || 'Errore durante l\'assegnazione punti', 'error');
-    }
-  } catch (error) {
-    showToast('Errore durante l\'assegnazione punti', 'error');
-  } finally {
-    setButtonLoading('assign-points-btn', false);
-  }
-}
-
-async function loadRecentTransactions() {
-  try {
-    let transactions;
     
-    if (AppState.useMockData || !AppState.isOnline) {
-      transactions = MOCK_DATA.transactions.slice(0, 5);
-    } else {
-      try {
-        const response = await retryApiCall('/points/transactions?limit=5');
-        transactions = response.transactions;
-      } catch (error) {
-        transactions = MOCK_DATA.transactions.slice(0, 5);
-      }
+    // Mock update table name
+    if (endpoint.startsWith('/tables/') && endpoint.endsWith('/name') && options.method === 'PUT') {
+        const tableId = parseInt(endpoint.split('/')[2]);
+        const { name } = JSON.parse(options.body);
+        const table = MOCK_DATA.tables.find(t => t.id === tableId);
+        if (table) {
+            table.name = name;
+            return { success: true, table };
+        }
     }
-
-    displayTransactions(transactions);
-  } catch (error) {
-    console.error('Error loading transactions:', error);
-  }
-}
-
-function displayTransactions(transactions) {
-  const container = document.getElementById('recent-transactions');
-  
-  if (transactions.length === 0) {
-    container.innerHTML = '<div class="empty-state"><p>Nessuna transazione recente</p></div>';
-    return;
-  }
-
-  container.innerHTML = transactions.map(t => `
-    <div class="transaction-item">
-      <div class="transaction-details">
-        <div class="transaction-table">${t.tableName}</div>
-        <div class="transaction-time">${formatDate(new Date(t.timestamp))}</div>
-      </div>
-      <div class="transaction-points">+${t.points}</div>
-    </div>
-  `).join('');
-}
-
-// Customer Functions
-async function identifyMyTable(qrCode) {
-  try {
-    let table;
     
-    if (AppState.useMockData || !AppState.isOnline) {
-      table = mockGetTable(qrCode);
-    } else {
-      try {
-        const response = await retryApiCall(`/tables/qr/${qrCode}`);
-        table = response.table;
-      } catch (error) {
-        AppState.useMockData = true;
-        table = mockGetTable(qrCode);
-      }
-    }
-
-    if (table) {
-      AppState.myTable = table;
-      displayMyTableInfo(table);
-      showToast(`Il tuo tavolo è "${table.name}"!`, 'success');
-      refreshLeaderboard();
-    } else {
-      showToast('Codice QR non valido', 'error');
-    }
-  } catch (error) {
-    showToast('Errore durante l\'identificazione del tavolo', 'error');
-  }
+    throw new Error('Mock endpoint not implemented');
 }
 
-function displayMyTableInfo(table) {
-  const container = document.getElementById('my-table-info');
-  const leaderboard = AppState.useMockData ? mockGetLeaderboard() : [];
-  const position = leaderboard.findIndex(t => t.id === table.id) + 1;
-  
-  document.getElementById('my-table-name').textContent = table.name;
-  document.getElementById('my-table-position').textContent = `#${position}`;
-  document.getElementById('my-table-points').textContent = table.points;
-  document.getElementById('new-table-name').value = table.name;
-  
-  container.classList.remove('hidden');
-}
-
-async function updateTableName(tableId, newName) {
-  if (!newName.trim()) {
-    showToast('Il nome del tavolo non può essere vuoto', 'error');
-    return;
-  }
-
-  try {
-    let result;
+// UI Functions - Fixed view switching
+function showTableView() {
+    // Ensure proper hiding/showing with immediate effect
+    elements.cashierView.classList.add('hidden');
+    elements.tableView.classList.remove('hidden');
+    elements.loginBtn.classList.remove('hidden');
+    elements.logoutBtn.classList.add('hidden');
     
-    if (AppState.useMockData || !AppState.isOnline) {
-      result = mockUpdateTableName(tableId, newName.trim());
-    } else {
-      try {
-        const response = await retryApiCall(`/tables/${tableId}/name`, {
-          method: 'PUT',
-          body: JSON.stringify({ name: newName.trim() })
-        });
-        result = { success: true, table: response.table };
-      } catch (error) {
-        AppState.useMockData = true;
-        result = mockUpdateTableName(tableId, newName.trim());
-      }
-    }
+    // Force reflow to ensure immediate visual update
+    elements.tableView.offsetHeight;
+}
 
-    if (result.success) {
-      AppState.myTable = result.table;
-      displayMyTableInfo(result.table);
-      showToast('Nome tavolo aggiornato!', 'success');
-      refreshLeaderboard();
-    } else {
-      showToast(result.message || 'Errore durante l\'aggiornamento', 'error');
+function showCashierView() {
+    // Ensure proper hiding/showing with immediate effect
+    elements.tableView.classList.add('hidden');
+    elements.cashierView.classList.remove('hidden');
+    elements.loginBtn.classList.add('hidden');
+    elements.logoutBtn.classList.remove('hidden');
+    
+    // Force reflow to ensure immediate visual update
+    elements.cashierView.offsetHeight;
+}
+
+function updateTableInfo(table) {
+    if (!table) return;
+    
+    currentTable = table;
+    
+    // Update table view
+    elements.currentTableName.textContent = table.name;
+    elements.tablePoints.textContent = `${table.points} punti`;
+    elements.newTableName.value = '';
+    elements.newTableName.placeholder = table.name;
+    
+    // Update cashier view
+    elements.cashierTableName.textContent = table.name;
+    elements.cashierTablePoints.textContent = `${table.points} punti`;
+}
+
+function updateLeaderboard(tables) {
+    if (!tables || !Array.isArray(tables)) return;
+    
+    // Sort tables by points (descending)
+    const sortedTables = [...tables].sort((a, b) => b.points - a.points);
+    
+    elements.leaderboard.innerHTML = '';
+    
+    sortedTables.forEach((table, index) => {
+        const position = index + 1;
+        const isCurrentTable = currentTable && table.id === currentTable.id;
+        
+        const item = document.createElement('div');
+        item.className = `leaderboard-item ${isCurrentTable ? 'current-table' : ''}`;
+        
+        item.innerHTML = `
+            <div class="leaderboard-rank">
+                <span class="rank-number ${position <= 3 ? 'top-3' : ''}">${position}</span>
+                <div class="table-info">
+                    <h4>${table.name}</h4>
+                    <span class="points">${table.points} punti</span>
+                </div>
+            </div>
+        `;
+        
+        elements.leaderboard.appendChild(item);
+    });
+    
+    // Update current table position
+    const currentPosition = sortedTables.findIndex(t => currentTable && t.id === currentTable.id) + 1;
+    if (currentPosition > 0) {
+        elements.tablePosition.textContent = `#${currentPosition}`;
     }
-  } catch (error) {
-    showToast('Errore durante l\'aggiornamento del nome', 'error');
-  }
+}
+
+function updateOperationsHistory() {
+    if (!operationsHistory.length) {
+        elements.operationsHistory.innerHTML = `
+            <div class="operation-item">
+                <div class="operation-info">
+                    <span>Nessuna operazione recente</span>
+                </div>
+            </div>
+        `;
+        return;
+    }
+    
+    elements.operationsHistory.innerHTML = '';
+    
+    operationsHistory.slice(0, 10).forEach(operation => {
+        const item = document.createElement('div');
+        item.className = 'operation-item';
+        
+        item.innerHTML = `
+            <div class="operation-info">
+                <span class="operation-points">+${operation.points} punti</span>
+                <span class="operation-time">${formatTime(operation.timestamp)}</span>
+            </div>
+            <span>${operation.cashier}</span>
+        `;
+        
+        elements.operationsHistory.appendChild(item);
+    });
+}
+
+// Main App Logic
+async function loadTableData(qrCode) {
+    try {
+        const response = await apiCall(`/tables/qr/${qrCode}`);
+        if (response.success && response.table) {
+            updateTableInfo(response.table);
+            return response.table;
+        }
+    } catch (error) {
+        showToast('Errore nel caricamento dati tavolo', 'error');
+        console.error('Error loading table:', error);
+    }
+    return null;
 }
 
 async function loadLeaderboard() {
-  try {
-    let tables;
-    
-    if (AppState.useMockData || !AppState.isOnline) {
-      tables = mockGetLeaderboard();
-    } else {
-      try {
-        const response = await retryApiCall('/tables/leaderboard');
-        tables = response.tables;
-      } catch (error) {
-        AppState.useMockData = true;
-        tables = mockGetLeaderboard();
-      }
+    try {
+        const response = await apiCall('/tables/leaderboard');
+        if (response.success && response.tables) {
+            updateLeaderboard(response.tables);
+        }
+    } catch (error) {
+        showToast('Errore nel caricamento classifica', 'error');
+        console.error('Error loading leaderboard:', error);
     }
-
-    displayLeaderboard(tables);
-  } catch (error) {
-    showToast('Errore durante il caricamento della classifica', 'error');
-    displayLeaderboard([]);
-  }
 }
 
-function displayLeaderboard(tables) {
-  const container = document.getElementById('leaderboard');
-  const medals = ['🥇', '🥈', '🥉'];
-  
-  if (tables.length === 0) {
-    container.innerHTML = '<div class="empty-state"><p>Nessun tavolo trovato</p></div>';
-    return;
-  }
+async function handleLogin(username, password) {
+    try {
+        const response = await apiCall('/auth/login', {
+            method: 'POST',
+            body: JSON.stringify({ username, password })
+        });
+        
+        if (response.success && response.token) {
+            saveSession({
+                token: response.token,
+                user: response.user
+            });
+            
+            // Close modal immediately
+            elements.loginModal.classList.add('hidden');
+            
+            // Clear form
+            elements.username.value = '';
+            elements.password.value = '';
+            
+            // Update cashier name
+            elements.cashierName.textContent = response.user.name;
+            
+            // Show success message
+            showToast(`Benvenuto, ${response.user.name}!`, 'success');
+            
+            // Switch to cashier view immediately if we have a table
+            if (currentTable) {
+                showCashierView();
+                updateOperationsHistory();
+            }
+            
+            return true;
+        }
+    } catch (error) {
+        showToast('Credenziali non valide', 'error');
+        console.error('Login error:', error);
+    }
+    return false;
+}
 
-  container.innerHTML = tables.map((table, index) => {
-    const position = index + 1;
-    const isMyTable = AppState.myTable && AppState.myTable.id === table.id;
-    const medal = position <= 3 ? medals[position - 1] : '';
+async function handleAddPoints(points) {
+    if (!currentTable || !currentSession) return;
     
-    return `
-      <div class="leaderboard-item ${isMyTable ? 'highlighted' : ''}">
-        <div class="position ${medal ? 'medal' : ''}">${medal || position}</div>
-        <div class="table-info-leaderboard">
-          <div class="table-name-leaderboard">${table.name}</div>
-          <div class="table-points-leaderboard">Punti: ${table.points}</div>
-        </div>
-        <div class="points-badge">${table.points}</div>
-      </div>
-    `;
-  }).join('');
+    try {
+        const response = await apiCall('/points/add', {
+            method: 'POST',
+            body: JSON.stringify({
+                tableId: currentTable.id,
+                points: parseInt(points)
+            })
+        });
+        
+        if (response.success) {
+            currentTable.points = response.newPoints;
+            elements.cashierTablePoints.textContent = `${response.newPoints} punti`;
+            
+            showToast(`Aggiunti ${points} punti!`, 'success');
+            updateOperationsHistory();
+            
+            // Reload leaderboard to reflect changes
+            await loadLeaderboard();
+        }
+    } catch (error) {
+        showToast('Errore nell\'aggiunta punti', 'error');
+        console.error('Add points error:', error);
+    }
 }
 
-async function refreshLeaderboard() {
-  const container = document.getElementById('leaderboard');
-  container.innerHTML = `
-    <div class="loading-skeleton">
-      <div class="skeleton-item"></div>
-      <div class="skeleton-item"></div>
-      <div class="skeleton-item"></div>
-    </div>
-  `;
-  await loadLeaderboard();
+async function handleChangeTableName(newName) {
+    if (!currentTable || !newName.trim()) return;
+    
+    try {
+        const response = await apiCall(`/tables/${currentTable.id}/name`, {
+            method: 'PUT',
+            body: JSON.stringify({ name: newName.trim() })
+        });
+        
+        if (response.success && response.table) {
+            updateTableInfo(response.table);
+            showToast('Nome tavolo aggiornato!', 'success');
+            
+            // Reload leaderboard to reflect changes
+            await loadLeaderboard();
+        }
+    } catch (error) {
+        showToast('Errore nell\'aggiornamento nome', 'error');  
+        console.error('Change name error:', error);
+    }
+}
+
+// Smart Routing Logic
+async function initializeApp() {
+    // Get URL parameters
+    const urlParams = new URLSearchParams(window.location.search);
+    const tableCode = urlParams.get('table');
+    
+    // Check existing session
+    currentSession = getSession();
+    
+    // Load initial data
+    if (tableCode) {
+        const table = await loadTableData(tableCode);
+        if (table) {
+            // Smart routing logic
+            if (currentSession && currentSession.user.role === 'cashier') {
+                // User is already logged in as cashier - go directly to dashboard
+                elements.cashierName.textContent = currentSession.user.name;
+                showCashierView();
+                updateOperationsHistory();
+                showToast(`Bentornato, ${currentSession.user.name}!`, 'info');
+            } else {
+                // Show normal table view with login option
+                showTableView();
+            }
+        }
+    } else {
+        // No table specified - show normal view or redirect to example
+        showTableView();
+        // Simulate scanning a table for demo purposes
+        const demoTable = MOCK_DATA.tables[0];
+        updateTableInfo(demoTable);
+        showToast('Demo: simulazione scansione Tavolo 1', 'info');
+    }
+    
+    // Always load leaderboard
+    await loadLeaderboard();
+    
+    hideLoading();
 }
 
 // Event Listeners
-document.addEventListener('DOMContentLoaded', function() {
-  // Initialize app
-  setTimeout(() => {
-    showScreen('role-selection');
-  }, 2000);
-
-  // Network status
-  window.addEventListener('online', () => {
-    AppState.isOnline = true;
-    updateOfflineIndicator();
-    showToast('Connessione ripristinata', 'success');
-  });
-
-  window.addEventListener('offline', () => {
-    AppState.isOnline = false;
-    AppState.useMockData = true;
-    updateOfflineIndicator();
-    showToast('Connessione persa - Modalità offline', 'warning');
-  });
-
-  // Role selection
-  document.querySelectorAll('.role-card').forEach(card => {
-    card.addEventListener('click', function() {
-      const role = this.dataset.role;
-      if (role === 'cashier') {
-        showScreen('cashier-login');
-      } else if (role === 'customer') {
-        showScreen('customer-dashboard');
-        loadLeaderboard();
-      }
+function setupEventListeners() {
+    // Login modal
+    elements.loginBtn.addEventListener('click', () => {
+        elements.loginModal.classList.remove('hidden');
+        elements.username.focus();
     });
-  });
-
-  // Login form
-  document.getElementById('login-form').addEventListener('submit', function(e) {
-    e.preventDefault();
-    const formData = new FormData(this);
-    login(formData.get('username'), formData.get('password'));
-  });
-
-  // QR scan form (cashier)
-  document.getElementById('qr-scan-form').addEventListener('submit', function(e) {
-    e.preventDefault();
-    const formData = new FormData(this);
-    const qrCode = formData.get('qrCode').trim();
-    if (qrCode) {
-      findTable(qrCode);
-    }
-  });
-
-  // Customer QR form
-  document.getElementById('customer-qr-form').addEventListener('submit', function(e) {
-    e.preventDefault();
-    const formData = new FormData(this);
-    const qrCode = formData.get('qrCode').trim();
-    if (qrCode) {
-      identifyMyTable(qrCode);
-    }
-  });
-
-  // Points presets
-  document.querySelectorAll('.points-preset').forEach(button => {
-    button.addEventListener('click', function() {
-      const points = parseInt(this.dataset.points);
-      document.getElementById('custom-points').value = points;
-      
-      document.querySelectorAll('.points-preset').forEach(btn => btn.classList.remove('active'));
-      this.classList.add('active');
+    
+    elements.closeModal.addEventListener('click', () => {
+        elements.loginModal.classList.add('hidden');
     });
-  });
-
-  // Points form
-  document.getElementById('points-form').addEventListener('submit', function(e) {
-    e.preventDefault();
-    if (!AppState.selectedTable) {
-      showToast('Seleziona prima un tavolo', 'error');
-      return;
-    }
-
-    const formData = new FormData(this);
-    const points = parseInt(formData.get('points'));
     
-    if (!points || points <= 0) {
-      showToast('Inserisci un numero di punti valido', 'error');
-      return;
-    }
-
-    if (points > 1000) {
-      showToast('Massimo 1000 punti per volta', 'error');
-      return;
-    }
-
-    showConfirmModal(
-      'Conferma Assegnazione',
-      `Assegnare ${points} punti a "${AppState.selectedTable.name}"?`,
-      () => addPoints(AppState.selectedTable.id, points)
-    );
-  });
-
-  // Name change form
-  document.getElementById('name-change-form').addEventListener('submit', function(e) {
-    e.preventDefault();
-    if (!AppState.myTable) {
-      showToast('Identifica prima il tuo tavolo', 'error');
-      return;
-    }
-
-    const formData = new FormData(this);
-    const newName = formData.get('newName').trim();
+    elements.loginModal.addEventListener('click', (e) => {
+        if (e.target === elements.loginModal || e.target.classList.contains('modal-backdrop')) {
+            elements.loginModal.classList.add('hidden');
+        }
+    });
     
-    if (newName && newName !== AppState.myTable.name) {
-      updateTableName(AppState.myTable.id, newName);
-    }
-  });
+    // Login form
+    elements.loginForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const username = elements.username.value.trim();
+        const password = elements.password.value.trim();
+        
+        if (username && password) {
+            await handleLogin(username, password);
+        }
+    });
+    
+    // Logout
+    elements.logoutBtn.addEventListener('click', () => {
+        clearSession();
+        showTableView();
+        showToast('Disconnesso con successo', 'info');
+    });
+    
+    // Change table name
+    elements.changeNameBtn.addEventListener('click', async () => {
+        const newName = elements.newTableName.value.trim();
+        if (newName) {
+            await handleChangeTableName(newName);
+        }
+    });
+    
+    // Point buttons
+    document.querySelectorAll('.point-btn').forEach(btn => {
+        btn.addEventListener('click', async () => {
+            const points = btn.dataset.points;
+            await handleAddPoints(points);
+        });
+    });
+    
+    // Custom points
+    elements.addCustomPoints.addEventListener('click', async () => {
+        const points = parseInt(elements.customPoints.value);
+        if (points && points > 0) {
+            await handleAddPoints(points);
+            elements.customPoints.value = '';
+        }
+    });
+    
+    // Custom points enter key
+    elements.customPoints.addEventListener('keypress', async (e) => {
+        if (e.key === 'Enter') {
+            elements.addCustomPoints.click();
+        }
+    });
+    
+    // Table name enter key
+    elements.newTableName.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+            elements.changeNameBtn.click();
+        }
+    });
+}
 
-  // Modal backdrop click
-  document.querySelector('.modal-backdrop').addEventListener('click', closeConfirmModal);
-
-  // Initial offline check
-  updateOfflineIndicator();
+// Initialize app when DOM is loaded
+document.addEventListener('DOMContentLoaded', () => {
+    setupEventListeners();
+    initializeApp();
 });
 
-// Global functions for HTML onclick handlers
-window.showScreen = showScreen;
-window.logout = logout;
-window.refreshLeaderboard = refreshLeaderboard;
-window.closeConfirmModal = closeConfirmModal;
+// Handle browser back/forward navigation
+window.addEventListener('popstate', () => {
+    initializeApp();
+});
