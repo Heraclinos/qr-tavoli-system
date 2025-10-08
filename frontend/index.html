@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QR Tavoli - Sistema Punti</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Loading Screen -->
+    <div id="loading" class="loading-screen">
+        <div class="loading-spinner"></div>
+        <p>Caricamento...</p>
+    </div>
+
+    <!-- Header -->
+    <header class="app-header">
+        <div class="container">
+            <div class="header-content">
+                <h1 class="app-title">🍽️ QR Tavoli</h1>
+                <div class="header-actions">
+                    <button id="loginBtn" class="btn btn--outline btn--sm login-btn">
+                        👤 Accedi
+                    </button>
+                    <button id="logoutBtn" class="btn btn--outline btn--sm logout-btn hidden">
+                        🚪 Esci
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="container">
+            <!-- Normal Table View -->
+            <div id="tableView" class="table-view">
+                <div class="table-info-card card">
+                    <div class="card__body">
+                        <div class="table-header">
+                            <h2 id="currentTableName" class="table-name">Tavolo 1</h2>
+                            <div class="table-position">
+                                <span class="position-badge" id="tablePosition">#1</span>
+                                <span class="points-display" id="tablePoints">85 punti</span>
+                            </div>
+                        </div>
+                        
+                        <div class="table-actions">
+                            <div class="form-group">
+                                <label class="form-label">Cambia nome tavolo:</label>
+                                <div class="name-change-form">
+                                    <input type="text" id="newTableName" class="form-control" placeholder="Nuovo nome...">
+                                    <button id="changeNameBtn" class="btn btn--primary btn--sm">Salva</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Leaderboard -->
+                <div class="leaderboard-section">
+                    <h3>🏆 Classifica Tavoli</h3>
+                    <div class="leaderboard" id="leaderboard">
+                        <!-- Leaderboard items will be populated by JS -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Cashier Dashboard -->
+            <div id="cashierView" class="cashier-view hidden">
+                <div class="cashier-header">
+                    <div class="cashier-info">
+                        <h2>💼 Dashboard Cassiere</h2>
+                        <p>Benvenuto, <span id="cashierName">Cassiere</span></p>
+                    </div>
+                    <div class="current-table-info">
+                        <h3 id="cashierTableName">Tavolo 1</h3>
+                        <span id="cashierTablePoints" class="points-badge">85 punti</span>
+                    </div>
+                </div>
+
+                <div class="points-section">
+                    <div class="card">
+                        <div class="card__body">
+                            <h4>➕ Aggiungi Punti</h4>
+                            <div class="points-buttons">
+                                <button class="btn btn--primary point-btn" data-points="1">+1</button>
+                                <button class="btn btn--primary point-btn" data-points="5">+5</button>
+                                <button class="btn btn--primary point-btn" data-points="10">+10</button>
+                                <button class="btn btn--primary point-btn" data-points="20">+20</button>
+                            </div>
+                            <div class="custom-points">
+                                <input type="number" id="customPoints" class="form-control" placeholder="Punti personalizzati" min="1">
+                                <button id="addCustomPoints" class="btn btn--secondary">Aggiungi</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="operations-history">
+                    <h4>📋 Operazioni Recenti</h4>
+                    <div id="operationsHistory" class="operations-list">
+                        <!-- Operations will be populated by JS -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Login Modal -->
+    <div id="loginModal" class="modal hidden">
+        <div class="modal-backdrop"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>🔐 Accesso Cassiere</h3>
+                <button id="closeModal" class="modal-close">✕</button>
+            </div>
+            <div class="modal-body">
+                <form id="loginForm">
+                    <div class="form-group">
+                        <label class="form-label">Username:</label>
+                        <input type="text" id="username" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Password:</label>
+                        <input type="password" id="password" class="form-control" required>
+                    </div>
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn--primary btn--full-width">Accedi</button>
+                    </div>
+                </form>
+                <div class="login-help">
+                    <small>Credenziali demo: cassiere1 / cassiere123</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notifications -->
+    <div id="toastContainer" class="toast-container"></div>
+
+    <script src="app.js"></script>
+</body>
+</html>
