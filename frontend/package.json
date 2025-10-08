@@ -1,16 +1,14 @@
 {
   "name": "qr-tavoli-frontend",
   "version": "1.0.0",
-  "description": "Frontend statico QR Tavoli Smart",
-  "main": "index.html",
+  "description": "Frontend statico QR Tavoli",
   "scripts": {
-    "start": "parcel index.html --open",
     "build": "parcel build index.html --dist-dir dist --public-url ./"
   },
   "devDependencies": {
     "parcel": "^2.9.0"
   },
-  "keywords": ["qr", "tavoli", "frontend", "restaurant", "static"],
+  "keywords": ["qr", "tavoli", "frontend", "static", "restaurant"],
   "author": "Emanuele",
   "license": "MIT"
 }
