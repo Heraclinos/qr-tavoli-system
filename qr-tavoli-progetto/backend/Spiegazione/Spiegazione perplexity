@@ -1,0 +1,166 @@
+# Struttura Backend Node.js per Sistema QR Punti Tavoli
+
+Ho creato per te una struttura backend Node.js completa e professionale per il tuo progetto. Il backend implementa tutte le funzionalità che abbiamo progettato nel frontend.
+## 🏗️ **Architettura del Backend**
+
+### **Struttura del Progetto**
+```
+qr-tavoli-backend/
+├── 📦 package.json          # Dipendenze e script
+├── 🔧 server.js            # Entry point applicazione  
+├── 📖 README.md            # Documentazione completa
+├── 🔒 .env.example         # Template variabili ambiente
+├── src/
+│   ├── 🚀 app.js           # Configurazione Express
+│   ├── config/             # Database e configurazioni
+│   ├── controllers/        # Logica business
+│   ├── middleware/         # Autenticazione e validazione
+│   ├── models/            # Schema MongoDB
+│   ├── routes/            # Definizione endpoint
+│   └── utils/             # Helper e utility
+└── tests/                 # Suite di test completa
+```
+
+## 🎯 **Funzionalità Implementate**
+
+### **Sistema di Autenticazione**
+- **Registrazione e login** con JWT tokens
+- **Ruoli utente**: Admin, Cassiere, Cliente
+- **Middleware di protezione** per endpoint sensibili
+- **Hash password** con bcryptjs per sicurezza
+- **Gestione profili** utente con aggiornamenti
+
+### **Gestione Tavoli**
+- **CRUD completo** per tavoli del ristorante
+- **Generazione automatica** QR codes (`TABLE_1`, `TABLE_2`, etc.)
+- **Ricerca tavolo** tramite scansione QR code
+- **Classifica pubblica** ordinata per punti
+- **Calcolo posizioni** con medaglie per top 3
+
+### **Sistema Punti**
+- **Assegnazione punti** (solo cassieri/admin)
+- **Riscatto punti** per premi
+- **Storico transazioni** completo
+- **Statistiche giornaliere** e per utente
+- **Validazioni** per prevenire errori
+
+### **Sicurezza e Validazione**
+- **Rate limiting** (100 richieste/15min per IP)
+- **Helmet** per header sicuri
+- **CORS** configurabile
+- **Validazione input** con express-validator
+- **Sanitizzazione HTML** anti-XSS
+- **Controlli ruoli** granulari
+
+## 🚀 **Come Utilizzarlo**
+
+### **1. Setup Iniziale**
+```bash
+# Estrai il file ZIP
+unzip qr-tavoli-backend.zip
+cd qr-tavoli-backend
+
+# Installa dipendenze
+npm install
+
+# Configura variabili ambiente
+cp .env.example .env
+# Modifica .env con i tuoi dati (MongoDB URI, JWT secret, etc.)
+```
+
+### **2. Database Setup**
+```bash
+# Popola database con dati di esempio
+npm run seed
+
+# Questo creerà:
+# - Admin: admin@restaurant.com / admin123
+# - Cassiere: cassiere@restaurant.com / cassiere123  
+# - 10 tavoli con punti casuali
+# - 20 transazioni di esempio
+```
+
+### **3. Avvio Server**
+```bash
+# Sviluppo (con auto-restart)
+npm run dev
+
+# Produzione
+npm start
+
+# Testing
+npm test
+```
+
+## 📡 **API Endpoints Principali**
+
+### **Autenticazione**
+- `POST /api/auth/register` - Registrazione utente
+- `POST /api/auth/login` - Login
+- `GET /api/auth/me` - Profilo utente corrente
+
+### **Tavoli**
+- `GET /api/tables/leaderboard` - Classifica pubblica
+- `GET /api/tables/qr/:qrCode` - Trova tavolo tramite QR
+- `POST /api/tables` - Crea tavolo (admin)
+- `PUT /api/tables/:id/name` - Cambia nome tavolo
+
+### **Punti**
+- `POST /api/points/add` - Assegna punti tramite QR (cassiere)
+- `POST /api/points/redeem` - Riscatta punti (cassiere)
+- `GET /api/points/transactions` - Storico transazioni
+- `GET /api/points/stats/daily` - Statistiche giornaliere
+
+## 🔗 **Integrazione con Frontend**
+
+Il backend è perfettamente compatibile con il frontend che abbiamo creato:
+
+1. **Endpoint classifica** per dashboard clienti
+2. **Ricerca QR** per identificare tavoli
+3. **Assegnazione punti** per dashboard cassieri
+4. **Cambio nome tavolo** per personalizzazione
+5. **Autenticazione ruoli** per controllo accessi
+
+## 🗄️ **Database Schema**
+
+### **Tavoli (Tables)**
+- Numero tavolo, nome, punti, QR code
+- Tracking ultimo aggiornamento punti
+- Soft delete per mantenere storico
+
+### **Utenti (Users)**
+- Username, email, password hashata, ruolo
+- Informazioni profilo (nome, cognome)
+- Tracking ultimo login
+
+### **Transazioni (PointTransactions)**
+- Collegamento tavolo-utente assegnatore
+- Punti assegnati/riscattati, descrizione
+- Metadata per analytics e audit trail
+
+## 🏃‍♂️ **Deploy in Produzione**
+
+### **Hosting Consigliato**
+1. **Render.com** - Gratuito con PostgreSQL
+2. **Railway.app** - $5 crediti/mese
+3. **MongoDB Atlas** - Database cloud gratuito
+4. **Vercel/Netlify** - Solo per frontend
+
+### **Variabili Produzione**
+```bash
+NODE_ENV=production
+PORT=3000
+MONGODB_URI=your-mongodb-atlas-uri
+JWT_SECRET=your-super-secure-secret
+FRONTEND_URL=your-frontend-domain
+```
+
+## 🧪 **Testing e Qualità**
+
+- **Test suite completa** con Jest e Supertest
+- **Coverage** per tutti i controller principali
+- **Test autenticazione, tavoli, punti**
+- **Setup database test** isolato
+- **CI/CD ready** per deployment automatico
+
+Il backend è **production-ready** e include tutto ciò che serve per far funzionare il tuo sistema QR punti tavoli in un ambiente reale. La struttura è scalabile e facilmente estendibile per future funzionalità come analytics avanzate, notifiche push, o integrazione con sistemi POS esistenti.

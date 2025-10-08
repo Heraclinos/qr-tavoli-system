@@ -1,0 +1,116 @@
+Per il progetto QR punti tavoli, i **migliori siti per hostare web app full-stack** (frontend, backend, database) sono:
+
+| Piattaforma    | Frontend | Backend | Database         | Gratis | Facile |
+|----------------|----------|---------|------------------|--------|--------|
+| **Render**     | ✅       | ✅      | ✅ PostgreSQL     | ✅     | ✅     |
+| **Railway**    | ✅       | ✅      | ✅ PostgreSQL     | $5/m   | ✅     |
+| **Vercel**     | ✅       | ✅*     | ❌ (usare esterno)| ✅     | ✅     |
+| **Supabase**   | ❌       | ✅      | ✅ PostgreSQL     | ✅     | ✅     |
+| **Firebase**   | ✅       | ✅      | ✅ Firestore RTDB | ✅     | ✅     |
+| **Netlify**    | ✅       | ✅      | ❌ (usare esterno)| ✅     | ✅     |
+
+(*) Backend serverless (API, non servizi persistenti)
+
+***
+
+## 🔝 Consiglio pratico per il tuo progetto
+
+**Scegli Render per la massima facilità**:  
+- Ospita frontend React/Vue/JS, backend Node.js, database PostgreSQL tutto nello stesso ambiente.  
+- Ha deploy da GitHub in pochi clic, log automatici, dashboard chiara, e supporto a API RESTful.[1][2][3]
+
+***
+
+### 🌐 Guida rapida Render (consigli passo-passo)
+
+#### **1. Prepara il progetto**
+- Crea la cartella con struttura backend (Node.js) e frontend (JS/React/HTML).
+- Inserisci un file `package.json` (backend) e il `build`/`dist` del frontend.
+
+#### **2. Crea repository su GitHub**
+- Versiona tutto → Push su GitHub.
+
+#### **3. Avvia la registrazione su Render**
+- Vai su [render.com](https://render.com)
+- Clicca su **“New Web Service”** per creare il backend:
+    - Scegli il tuo repo su GitHub
+    - Seleziona Node.js
+    - Configura variabile ambiente (PORT, DATABASE_URL, JWT_SECRET)
+- Clicca su **“New Static Site”** per il frontend:
+    - Scegli il repo/branch
+    - Directory: `build` o `dist`
+    - Output: URL pubblico
+
+#### **4. Aggiungi database PostgreSQL**
+- Crea nuovo servizio PostgreSQL dal dashboard Render
+- Ottieni la stringa di connessione → mettila in .env del backend
+
+#### **5. Collega backend e frontend**
+- Nel frontend, usa gli endpoint della REST API del backend (es: `https://tuo-backend.onrender.com/api/points/add`)
+- Permetti CORS sulle richieste (configura nel middleware Express)
+
+#### **6. Testa e Deploy**
+- Tutto si aggiorna quando fai commit su GitHub
+- Visualizza logs, restart, status direttamente dal dashboard
+
+***
+
+### 📋 Checklist Configurazione Perfetta
+
+1. **Ambiente `.env`**
+   - PORT=10000
+   - DATABASE_URL (da Render DB)
+   - JWT_SECRET
+   - FRONTEND_URL (dominio tuo sito)
+
+2. **CORS**
+   - Nel backend abilita CORS per il dominio frontend
+   - `origin: process.env.FRONTEND_URL`
+
+3. **Build Frontend**
+   - Compila React o Vue (`npm run build`)
+   - Metti i file in una directory statica (`build/`)
+
+4. **Testing**
+   - Usa Postman o il frontend per chiamare API
+   - Verifica risposte/errore dal dashboard
+
+5. **Sicurezza**
+   - Usa variabili ambiente (mai segreti nel codice!)
+   - Attiva HTTPS (Render lo fa di default)
+   - Abilita rate limiting nel backend
+
+***
+
+### ✨ Alternative
+
+- Se vuoi solo il database e API, **Supabase** è ottimo e gratuito fino a 500MB (PostgreSQL + autenticazione).[4][5][6]
+- Se ti interessa la sincronizzazione real-time (classifica che si aggiorna da sola), **Firebase** è il migliore per sviluppo veloce.[7][8][9][10]
+
+***
+
+#### **Risorse utili**
+
+- [Top Ways To Host Full Stack App Gratis][2][3][8][11][1]
+- [Ottimizzare ambiente e deploy][12][13][14]
+
+**Render** è l’opzione più “a pennello” per lo scenario QR ristorante: configurazione guidata, documentazione in italiano e supporto per ogni componente del tuo stack.[3][6][8][11][1][2][4]
+
+***
+
+Ogni passaggio, se seguito con repository e ambiente ben configurato, ti consente una pubblicazione professionale e scalabile per il tuo progetto!
+
+[1](https://www.geeksforgeeks.org/blogs/ways-to-host-your-full-stack-app-for-free/)
+[2](https://dev.to/philipathanasopoulos/guide-to-free-hosting-for-your-full-stack-spring-boot-application-4fak)
+[3](https://github.com/Open-Source-Chandigarh/Best-Services-For-Free-Application-Deployment)
+[4](https://supabase.com/alternatives/supabase-vs-firebase)
+[5](https://dev.to/mwolfhoffman/supabase-vs-firebase-pricing-and-when-to-use-which-5hhp)
+[6](https://www.closefuture.io/blogs/supabase-vs-firebase)
+[7](https://firebase.google.com/products/app-hosting)
+[8](https://firebase.google.com/docs/hosting)
+[9](https://www.jakeprins.com/blog/supabase-vs-firebase-2024)
+[10](https://www.netguru.com/blog/supabase-vs-firebase)
+[11](https://dev.to/wasp/top-5-ways-to-host-your-full-stack-app-for-free-c2j)
+[12](https://www.youtube.com/watch?v=i8zPbakOthM)
+[13](https://dev.to/livecycle/how-i-built-a-modern-food-menu-web-app-from-tech-stack-to-workflow-3iok)
+[14](https://talent500.com/blog/full-stack-development-for-cloud-platforms/)

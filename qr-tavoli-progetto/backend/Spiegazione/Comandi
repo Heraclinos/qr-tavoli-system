@@ -1,0 +1,114 @@
+## 🚀 Quick Start
+
+### Prerequisiti
+- Node.js >= 18.0.0
+- MongoDB (locale o MongoDB Atlas)
+- npm o yarn
+
+### Installazione
+
+1. **Clona il repository**
+   ```bash
+   git clone <repo-url>
+   cd qr-tavoli-backend
+   ```
+
+2. **Installa dipendenze**
+   ```bash
+   npm install
+   ```
+
+3. **Configura environment**
+   ```bash
+   cp .env.example .env
+   # Modifica .env con le tue configurazioni
+   ```
+
+4. **Popola database con dati di esempio**
+   ```bash
+   npm run seed
+   ```
+
+5. **Avvia server**
+   ```bash
+   # Development
+   npm run dev
+
+   # Production
+   npm start
+   ```
+
+Il server sarà disponibile su `http://localhost:3000`
+
+### Utenti di default (dopo seed)
+- **Admin**: `admin@restaurant.com` / `admin123`
+- **Cassiere**: `cassiere@restaurant.com` / `cassiere123`
+
+## 📡 Endpoint Principali
+
+### Autenticazione
+```
+POST /api/auth/register  # Registrazione
+POST /api/auth/login     # Login
+GET  /api/auth/me        # Profilo utente
+```
+
+### Tavoli
+```
+GET  /api/tables/leaderboard    # Classifica pubblica
+GET  /api/tables/qr/:qrCode     # Trova tavolo tramite QR
+POST /api/tables                # Crea tavolo (Admin)
+PUT  /api/tables/:id/name       # Cambia nome tavolo
+```
+
+### Punti
+```
+POST /api/points/add            # Assegna punti (Cassiere)
+POST /api/points/redeem         # Riscatta punti (Cassiere)
+GET  /api/points/transactions   # Storico transazioni
+GET  /api/points/stats/daily    # Statistiche giornaliere
+```
+
+## 🔧 Configurazione
+
+### Variabili Environment (.env)
+```bash
+NODE_ENV=development
+PORT=3000
+MONGODB_URI=mongodb://localhost:27017/qr-tavoli
+JWT_SECRET=your-super-secret-key
+JWT_EXPIRE=24h
+FRONTEND_URL=http://localhost:3000
+```
+
+### Ruoli Utente
+- **Admin**: Gestione completa sistema
+- **Cashier**: Assegnazione/riscatto punti
+- **Customer**: Visualizzazione classifica, cambio nome tavolo
+
+## 🧪 Testing
+
+```bash
+# Esegui test
+npm test
+
+# Test con coverage
+npm run test:coverage
+
+
+### Build per produzione
+```bash
+# Imposta NODE_ENV=production nel .env
+npm start
+```
+
+## 📊 Monitoring e Logging
+
+- Morgan per logging HTTP requests
+- Error handling centralizzato
+- Health check endpoint: `GET /health`
+
+
+## 📝 API Documentation
+
+Avvia il server e visita `/api/docs` per documentazione interattiva (da implementare con Swagger).
