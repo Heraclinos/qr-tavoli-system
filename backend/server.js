@@ -26,3 +26,13 @@ process.on('uncaughtException', (err) => {
   console.log('❌ Uncaught Exception:', err.message);
   process.exit(1);
 });
+
+
+// Configura CORS per il frontend
+app.use(cors({
+  origin: [
+    'http://localhost:3000',  // Development
+    'https://qr-tavoli-frontend.onrender.com'  // Se usi Render per frontend
+  ],
+  credentials: true
+}));
