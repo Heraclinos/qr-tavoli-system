@@ -33,6 +33,36 @@
     <!-- Main Content -->
     <main class="main-content">
         <div class="container">
+            <!-- Cashier Dashboard -->
+            <div id="cashierView" class="cashier-view hidden">
+                <div class="cashier-header">
+                    <div class="cashier-info">
+                        <h2>💼 Dashboard Cassiere</h2>
+                        <p>Benvenuto, <span id="cashierName">Cassiere</span></p>
+                    </div>
+                    <div class="current-table-info">
+                        <h3 id="cashierTableName">Tavolo 1</h3>
+                        <span id="cashierTablePoints" class="points-badge">85 punti</span>
+                    </div>
+                </div>
+
+                <div class="points-section">
+                    <div class="card">
+                        <div class="card__body">
+                            <h4>➕ Aggiungi Punti</h4>
+                            <div class="points-buttons">
+                                <button class="btn btn--primary point-btn" data-points="1">+1</button>
+                                <button class="btn btn--primary point-btn" data-points="5">+5</button>
+                                <button class="btn btn--primary point-btn" data-points="10">+10</button>
+                                <button class="btn btn--primary point-btn" data-points="20">+20</button>
+                            </div>
+                            <div class="custom-points">
+                                <input type="number" id="customPoints" class="form-control" placeholder="Punti personalizzati" min="1">
+                                <button id="addCustomPoints" class="btn btn--secondary">Aggiungi</button>
+                            </div>
+                        </div>
+                    </div>
+               
             <!-- Normal Table View -->
             <div id="tableView" class="table-view">
                 <div class="table-info-card card">
@@ -129,9 +159,6 @@
                         <button type="submit" class="btn btn--primary btn--full-width">Accedi</button>
                     </div>
                 </form>
-                <div class="login-help">
-                    <small>Credenziali demo: cassiere1 / cassiere123</small>
-                </div>
             </div>
         </div>
     </div>
