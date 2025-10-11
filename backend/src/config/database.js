@@ -45,6 +45,21 @@ const connectDB = async () => {
     });
 
     console.log(`🗄️  MongoDB Connected: ${conn.connection.host}`);
+
+    // Log per debugging in development
+    if (process.env.NODE_ENV === 'development') {
+      mongoose.set('debug', true);
+    }
+
+    // Event listeners
+    mongoose.connection.on('error', (err) => {
+      console.error('❌ MongoDB connection error:', err);
+    });
+
+    mongoose.connection.on('disconnected', () => {
+      console.log('🔌 MongoDB disconnected');
+    });
+    
   } catch (error) {
     console.error('❌ MongoDB connection error:', error.message);
     process.exit(1);
