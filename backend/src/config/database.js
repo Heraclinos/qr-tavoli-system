@@ -6,7 +6,7 @@ module.exports = {
 
   // Configurazioni QR
   QR_CODE_PREFIX: 'TABLE_',
-  MAX_POINTS_PER_TRANSACTION: 100,
+  MAX_POINTS_PER_TRANSACTION: 1000,
   MIN_POINTS_PER_TRANSACTION: 1,
 
   // Configurazioni tavoli
