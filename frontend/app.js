@@ -1,6 +1,6 @@
 // Configuration
 const CONFIG = {
-    apiBaseUrl: 'https://qr-tavoli-backend.onrender.com/api',
+    apiBaseUrl: 'https://qr-tavoli-system.onrender.com/api',
     sessionKey: 'qr-tavoli-session',
     sessionDuration: 24 * 60 * 60 * 1000, // 24 ore
     fallbackMode: true // Enable fallback to mock data if API fails
